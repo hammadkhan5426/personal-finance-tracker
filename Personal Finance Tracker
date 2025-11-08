@@ -1,109 +1,289 @@
+
+
 import csv
-import random
-with open('PersonalFinance.csv','a') as f:
-    def income(): #Function for adding Income
-        with open('PersonalFinance.csv','a') as f:
-            amt=int(input("Enter Amount:"))           
-            source=input("Enter Source:")
-            id=random.randint(10000,99999)
-            incm=[id, amt, "Income", source]
-            writer=csv.writer(f)
-            writer.writerow(incm)
+import os
+import sys
+import uuid
+from datetime import datetime
+import json
 
-    def expense(): #Function for adding Expense
-        with open('PersonalFinance.csv','a') as f:
-            amt=int(input("Enter Amount:"))
-            source=input("Enter Source:")
-            id=random.randint(10000,99999)
-            exp=[id, amt, "Expense", source]
-            writer=csv.writer(f)
-            writer.writerow(exp)
-    
-    def balance(): #Function to view the final balance
-        with open('PersonalFinance.csv','r') as f:
-            reader=csv.reader(f)
-            bal=0
-            for line in reader:
-                if len(line) < 3:
-                    continue
-                try:
-                    amt= int(line[1]) 
-                    if line[2]=="Income":
-                        bal+= amt
-                    else:
-                        bal-= amt
-                except ValueError:
-                    continue
-            print("Final Balance:",bal)
+try:
+    from colorama import Fore, Style, init as colorama_init
+    colorama_init(autoreset=True)
+except Exception:
+    class _Col:
+        def __getattr__(self, name):
+            return ''
+    Fore = Style = _Col()
 
-    def allTrans(): #Function to view all Transactions
-        with open('PersonalFinance.csv','r',newline='') as f:
-            reader=csv.reader(f)
-            for line in reader:
-                if any(field.strip() for field in line):
-                    print(line)
-    
-    def dlt(): #Function to delete a Transaction
-        id_to_dlt=input("Enter the ID to be deleted:").strip()
+DATA_DIR = "data"
+CSV_PATH = os.path.join(DATA_DIR, "transactions.csv")
+BACKUP_PATH = os.path.join(DATA_DIR, "transactions_backup.csv")
 
-        with open("PersonalFinance.csv",'r', newline='',encoding='utf-8-sig') as f:
-            reader=csv.reader(f)
-            rows=list(reader)
-        
-        
 
-        header=rows[0] if rows and not rows[0][0].strip().isdigit() else None
-        data_rows= rows[1:] if header else rows
+class Transaction:
+    def __init__(self, tid, date, ttype, amount, category, description):
+        self.id = tid
+        self.date = date  
+        self.type = ttype 
+        self.amount = float(amount)
+        self.category = category
+        self.description = description
 
-        new_rows=[]
-        deleted= False
+    def to_row(self):
+        return {
+            "id": self.id,
+            "date": self.date,
+            "type": self.type,
+            "amount": f"{self.amount:.2f}",
+            "category": self.category,
+            "description": self.description
+        }
 
-        with open("Deleted.csv",'a',newline='',encoding='utf-8') as deleted_file:
-            deleted_writer= csv.writer(deleted_file)
+    @staticmethod
+    def from_row(row):
+        return Transaction(
+            tid=row.get("id", str(uuid.uuid4())),
+            date=row.get("date", datetime.now().isoformat()),
+            ttype=row.get("type", "Expense"),
+            amount=row.get("amount", "0"),
+            category=row.get("category", ""),
+            description=row.get("description", "")
+        )
 
-            for row in data_rows:
-                if len(row) < 4:
-                    continue
-                row_id= row[0].strip()
 
-                if row_id == id_to_dlt:
-                    deleted_writer.writerow(row)
-                    deleted = True
-                else:
-                    new_rows.append(row)
-        with open("PersonalFinance.csv", 'w', newline='',encoding='utf-8') as f_out:
-            writer= csv.writer(f_out)
-            if header:
-                writer.writerow(header)
-            
-            writer.writerows(new_rows)
-        
-        if deleted:
-            print(f"Transaction with ID {id_to_dlt} has been deleted.")
+def ensure_data_dir():
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def load_transactions():
+    ensure_data_dir()
+    transactions = []
+    if not os.path.exists(CSV_PATH):
+        return transactions
+    with open(CSV_PATH, mode="r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                transactions.append(Transaction.from_row(row))
+            except Exception:
+                continue
+    return transactions
+
+
+def save_transactions(transactions):
+    ensure_data_dir()
+    fieldnames = ["id", "date", "type", "amount", "category", "description"]
+    with open(CSV_PATH, mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for t in transactions:
+            writer.writerow(t.to_row())
+
+
+def backup_transactions():
+    ensure_data_dir()
+    if os.path.exists(CSV_PATH):
+        with open(CSV_PATH, "r", encoding="utf-8") as src, open(BACKUP_PATH, "w", encoding="utf-8", newline="") as dst:
+            dst.write(src.read())
+
+
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def input_nonempty(prompt):
+    while True:
+        val = input(prompt).strip()
+        if val:
+            return val
+        print(Fore.YELLOW + "Please enter a value.")
+
+
+def input_float(prompt):
+    while True:
+        val = input(prompt).strip()
+        try:
+            f = float(val)
+            if f < 0:
+                print(Fore.YELLOW + "Please enter a non-negative number.")
+                continue
+            return f
+        except ValueError:
+            print(Fore.YELLOW + "Please enter a valid number (e.g., 1500 or 12.50).")
+
+
+def format_money(x):
+    return f"₹{x:,.2f}"
+
+
+def display_header():
+    clear_screen()
+    print(Fore.CYAN + Style.BRIGHT + "=== Personal Finance Tracker ===")
+    print(Fore.GREEN + "Track your income and expenses — clean, simple, and local.\n")
+
+
+def display_balance(transactions):
+    income = sum(t.amount for t in transactions if t.type.lower() == "income")
+    expense = sum(t.amount for t in transactions if t.type.lower() == "expense")
+    balance = income - expense
+    print(Fore.MAGENTA + f"\nTotal Income : {format_money(income)}")
+    print(Fore.RED + f"Total Expense: {format_money(expense)}")
+    print(Fore.CYAN + Style.BRIGHT + f"Current Balance: {format_money(balance)}\n")
+
+
+def display_transactions(transactions, limit=None):
+    if not transactions:
+        print(Fore.YELLOW + "No transactions to show.\n")
+        return
+    headers = ["ID", "Date", "Type", "Amount", "Category", "Description"]
+    rows = []
+    for t in transactions:
+        rows.append([t.id[:8], t.date.split("T")[0], t.type, format_money(t.amount), t.category, t.description[:40]])
+
+    if limit:
+        rows = rows[-limit:]
+
+    col_widths = [max(len(str(cell)) for cell in col) for col in zip(*([headers] + rows))]
+    header_line = "  ".join(h.ljust(w) for h, w in zip(headers, col_widths))
+    print(Fore.GREEN + header_line)
+    print("-" * len(header_line))
+    for r in rows:
+        line = "  ".join(str(cell).ljust(w) for cell, w in zip(r, col_widths))
+        print(line)
+    print("")
+
+
+def add_transaction(transactions, ttype):
+    print(Fore.CYAN + f"\nAdding a new {ttype}...")
+    amount = input_float("Amount: ₹ ")
+    category = input_nonempty("Category (e.g., Food, Salary, Travel): ")
+    description = input("Description (optional): ").strip()
+    tid = str(uuid.uuid4())
+    date = datetime.now().isoformat()
+    t = Transaction(tid, date, ttype, amount, category, description)
+    transactions.append(t)
+    save_transactions(transactions)
+    print(Fore.GREEN + f"{ttype} added: {format_money(amount)} in {category}.\n")
+
+
+def delete_transaction(transactions):
+    display_transactions(transactions, limit=10)
+    tid = input_nonempty("Enter the ID (first 8 chars) of the transaction to delete: ").strip()
+    matches = [t for t in transactions if t.id.startswith(tid)]
+    if not matches:
+        print(Fore.YELLOW + "No transaction found with that ID prefix.\n")
+        return
+    if len(matches) > 1:
+        print(Fore.YELLOW + "Multiple matches found; showing full matches:")
+        display_transactions(matches)
+        tid = input_nonempty("Enter the full ID to delete: ").strip()
+        matches = [t for t in transactions if t.id == tid]
+        if not matches:
+            print(Fore.YELLOW + "No exact match found. Aborting delete.\n")
+            return
+    t = matches[0]
+    print(Fore.RED + f"Deleting transaction: {t.id[:8]} | {t.type} | {format_money(t.amount)} | {t.category} | {t.description}")
+    confirm = input("Are you sure? (y/n): ").strip().lower()
+    if confirm == "y":
+        transactions.remove(t)
+        save_transactions(transactions)
+        print(Fore.GREEN + "Transaction deleted.\n")
+    else:
+        print("Delete cancelled.\n")
+
+
+def summary_by_category(transactions):
+    if not transactions:
+        print(Fore.YELLOW + "No data to summarize.\n")
+        return
+    cat = {}
+    for t in transactions:
+        key = (t.type, t.category)
+        cat[key] = cat.get(key, 0) + t.amount
+    print(Fore.CYAN + "\nCategory Summary:")
+    print(Fore.GREEN + "Type     Category           Total")
+    print("-" * 40)
+    for (ttype, category), total in sorted(cat.items(), key=lambda x: -x[1]):
+        print(f"{ttype.ljust(8)} {category.ljust(18)} {format_money(total)}")
+    print("")
+
+
+def monthly_summary(transactions):
+    if not transactions:
+        print(Fore.YELLOW + "No data to summarize.\n")
+        return
+    by_month = {}
+    for t in transactions:
+        month = t.date.split("T")[0][:7]  # YYYY-MM
+        by_month.setdefault(month, {"income": 0.0, "expense": 0.0})
+        if t.type.lower() == "income":
+            by_month[month]["income"] += t.amount
         else:
-            print(f"No transaction with ID {id_to_dlt} found.")
-        
-    
-while True: #Menu 
-    print("1. Add Income")
-    print("2. Add Expense")
-    print("3. View Balance")
-    print("4. View All Transactions")
-    print("5. Delete a Transaction")
-    print("6. Save and Exit")
-    ch= int(input("Enter your choice:"))
-    
-    if ch==1:
-        income()
-    if ch==2:
-        expense()
-    if ch==3:
-        balance()
-    if ch==4:
-        allTrans()
-    if ch==5:
-        dlt()
-    if ch==6:
-        break
+            by_month[month]["expense"] += t.amount
+    print(Fore.CYAN + "\nMonthly Summary (YYYY-MM):")
+    print(Fore.GREEN + "Month     Income       Expense      Balance")
+    print("-" * 50)
+    for month, vals in sorted(by_month.items()):
+        bal = vals["income"] - vals["expense"]
+        print(f"{month}   {format_money(vals['income']).rjust(11)}   {format_money(vals['expense']).rjust(11)}   {format_money(bal).rjust(11)}")
+    print("")
 
-    
+
+def export_json(transactions):
+    path = os.path.join(DATA_DIR, "transactions_export.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump([t.to_row() for t in transactions], f, indent=2)
+    print(Fore.GREEN + f"Exported JSON to {path}\n")
+
+
+def main_menu():
+    transactions = load_transactions()
+    while True:
+        display_header()
+        display_balance(transactions)
+        print("1. Add Income")
+        print("2. Add Expense")
+        print("3. View All Transactions")
+        print("4. View Recent Transactions (10)")
+        print("5. Summary by Category")
+        print("6. Monthly Summary")
+        print("7. Delete a Transaction")
+        print("8. Export to JSON")
+        print("9. Backup & Exit\n")
+        choice = input("Choose an option (1-9): ").strip()
+        if choice == "1":
+            add_transaction(transactions, "Income")
+        elif choice == "2":
+            add_transaction(transactions, "Expense")
+        elif choice == "3":
+            display_transactions(transactions)
+            input("Press Enter to continue...")
+        elif choice == "4":
+            display_transactions(transactions, limit=10)
+            input("Press Enter to continue...")
+        elif choice == "5":
+            summary_by_category(transactions)
+            input("Press Enter to continue...")
+        elif choice == "6":
+            monthly_summary(transactions)
+            input("Press Enter to continue...")
+        elif choice == "7":
+            delete_transaction(transactions)
+            input("Press Enter to continue...")
+        elif choice == "8":
+            export_json(transactions)
+            input("Press Enter to continue...")
+        elif choice == "9":
+            print(Fore.YELLOW + "Backing up data and exiting...")
+            backup_transactions()
+            save_transactions(transactions)
+            print(Fore.CYAN + "Goodbye!")
+            sys.exit(0)
+        else:
+            print(Fore.RED + "Invalid option. Please enter a number between 1 and 9.")
+            input("Press Enter to continue...")
+
+
+if __name__ == "__main__":
+    main_menu()
