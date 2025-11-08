@@ -1,100 +1,107 @@
+# 💰 Personal Finance Tracker (Python CLI)
 
-# 💰 Personal Finance Tracker (CLI - Python)
-
-A command-line interface (CLI) tool to manage personal income and expenses. This beginner-friendly project helped me master core Python fundamentals, file I/O, and menu-driven programming.
+A clean and simple command-line tool to manage your income and expenses — built to make learning Python fun and practical.  
+This is the **refined version** with a smoother UI, better structure, and more features.
 
 ---
 
 ## 🚀 Features
 
-- ✅ Add Income  
-- ✅ Add Expense  
-- ✅ View Current Balance  
-- ✅ View All Transactions  
-- ✅ Delete a Transaction by ID  
-- ✅ Persistent CSV-based storage
+- 🟢 Add **Income** and **Expense** entries with category & description  
+- 📜 View all transactions or just the 10 most recent ones  
+- 📊 Get **category-based** and **monthly summaries**  
+- 🗑️ Delete transactions easily using short IDs  
+- 💾 Automatic CSV backup on exit  
+- 📤 Export all data to JSON  
+- 🎨 Clean, colorized interface using `colorama` (optional)
 
 ---
 
-## 🧠 Concepts Used
+## 🧩 Folder Structure
 
-- Python Basics (variables, loops, conditionals)
-- File Handling (CSV)
-- Lists and Dictionaries
-- Menu-based CLI design
-- Random ID generation for entries
-
----
-
-## 🗃 File Structure
-
-```
-personal_finance_tracker/
-├── main.py                 # Menu and all functionality in one script
-├── PersonalFinance.csv     # Transaction data (auto-created)
-├── Deleted.csv             # Stores deleted transactions
-└── README.md               # Project documentation
-```
+📁 Personal-Finance-Tracker/
+ ┣ 📜 Personal_Finance_Tracker_refined.py   ← main program
+ ┣ 📁 data/
+ ┃ ┣ 📜 transactions.csv                   ← main data file (auto-created)
+ ┃ ┣ 📜 transactions_backup.csv             ← backup file (auto-created)
+ ┃ ┗ 📜 transactions_export.json            ← optional export file
+ ┗ 📜 README.md
 
 ---
 
-## 🧪 How to Run
+## 🛠 Requirements
 
-1. Make sure Python 3.x is installed on your system
-2. Clone this repository or download the files
-3. Run the script in terminal:
-
-```bash
-python main.py
-```
-
-4. Follow the menu prompts to add/view/delete transactions
+- Python 3.7 or above  
+- Optional package for colored output:
+  ```bash
+  pip install colorama
+  ```
 
 ---
 
-## 💾 Sample Transaction Format (CSV)
+## ▶️ How to Run
 
-Each record is stored as:
-
-ID, Amount, Type, Description/Source  
-12501, 1000, Income, Freelance job  
-12503, 150, Expense, Dinner
+1. Clone or download this repository  
+2. (Optional) Install colorama:
+   ```bash
+   pip install colorama
+   ```
+3. Run the program:
+   ```bash
+   python Personal_Finance_Tracker_refined.py
+   ```
+4. A folder named `data` will be created automatically to store all transaction files.
 
 ---
 
-## 📌 Example CLI Interaction
+## 📈 Example CLI Output
 
-```
-==== Personal Finance Tracker ====
+=== Personal Finance Tracker ===
+Track your income and expenses — clean, simple, and local.
+
+Total Income : ₹12,000.00
+Total Expense: ₹7,200.00
+Current Balance: ₹4,800.00
+
 1. Add Income
 2. Add Expense
-3. View Balance
-4. View All Transactions
-5. Delete a Transaction
-6. Save and Exit
-
-Enter your choice: 2
-Enter Expense Amount: 150
-Enter Category: Food
-✅ Expense added successfully!
-
-Enter your choice: 3
-💰 Current Balance: ₹850
-```
+3. View All Transactions
+4. View Recent Transactions (10)
+5. Summary by Category
+6. Monthly Summary
+7. Delete a Transaction
+8. Export to JSON
+9. Backup & Exit
 
 ---
 
-## 💡 Future Enhancements
+## 🧠 Key Learning Highlights
 
-- Add monthly reports / summaries
-- Categorize spending with filters
-- Plot graphs with matplotlib
-- Save to JSON as well
+- Practiced clean code structuring using classes and modular design  
+- Worked with file handling and CSV persistence  
+- Enhanced user experience with colorized CLI and validations  
+- Added reporting and summary functionalities (data grouping by category and month)
 
 ---
 
 ## 👨‍💻 Author
 
-Hammad Khan  
-Aspiring AI Engineer | BTech IT @ NSUT Delhi  
-Project 1 of my AI Learning Roadmap
+**Hammad Khan**  
+B.Tech IT @ NSUT Delhi  
+📍 Exploring Python, DSA, and AI through hands-on projects.  
+
+💬 *“Learning by building — one project at a time.”*
+
+---
+
+## 🌱 Future Improvements
+
+- Add a small dashboard using **Streamlit** or **Tkinter**  
+- Visualize monthly spending trends using **matplotlib**  
+- Add cloud sync support for multi-device use  
+
+---
+
+## 🧾 License
+
+This project is open-source under the MIT License — feel free to modify and build upon it.
