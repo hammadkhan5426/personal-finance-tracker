@@ -1,0 +1,109 @@
+import csv
+import random
+with open('PersonalFinance.csv','a') as f:
+    def income(): #Function for adding Income
+        with open('PersonalFinance.csv','a') as f:
+            amt=int(input("Enter Amount:"))           
+            source=input("Enter Source:")
+            id=random.randint(10000,99999)
+            incm=[id, amt, "Income", source]
+            writer=csv.writer(f)
+            writer.writerow(incm)
+
+    def expense(): #Function for adding Expense
+        with open('PersonalFinance.csv','a') as f:
+            amt=int(input("Enter Amount:"))
+            source=input("Enter Source:")
+            id=random.randint(10000,99999)
+            exp=[id, amt, "Expense", source]
+            writer=csv.writer(f)
+            writer.writerow(exp)
+    
+    def balance(): #Function to view the final balance
+        with open('PersonalFinance.csv','r') as f:
+            reader=csv.reader(f)
+            bal=0
+            for line in reader:
+                if len(line) < 3:
+                    continue
+                try:
+                    amt= int(line[1]) 
+                    if line[2]=="Income":
+                        bal+= amt
+                    else:
+                        bal-= amt
+                except ValueError:
+                    continue
+            print("Final Balance:",bal)
+
+    def allTrans(): #Function to view all Transactions
+        with open('PersonalFinance.csv','r',newline='') as f:
+            reader=csv.reader(f)
+            for line in reader:
+                if any(field.strip() for field in line):
+                    print(line)
+    
+    def dlt(): #Function to delete a Transaction
+        id_to_dlt=input("Enter the ID to be deleted:").strip()
+
+        with open("PersonalFinance.csv",'r', newline='',encoding='utf-8-sig') as f:
+            reader=csv.reader(f)
+            rows=list(reader)
+        
+        
+
+        header=rows[0] if rows and not rows[0][0].strip().isdigit() else None
+        data_rows= rows[1:] if header else rows
+
+        new_rows=[]
+        deleted= False
+
+        with open("Deleted.csv",'a',newline='',encoding='utf-8') as deleted_file:
+            deleted_writer= csv.writer(deleted_file)
+
+            for row in data_rows:
+                if len(row) < 4:
+                    continue
+                row_id= row[0].strip()
+
+                if row_id == id_to_dlt:
+                    deleted_writer.writerow(row)
+                    deleted = True
+                else:
+                    new_rows.append(row)
+        with open("PersonalFinance.csv", 'w', newline='',encoding='utf-8') as f_out:
+            writer= csv.writer(f_out)
+            if header:
+                writer.writerow(header)
+            
+            writer.writerows(new_rows)
+        
+        if deleted:
+            print(f"Transaction with ID {id_to_dlt} has been deleted.")
+        else:
+            print(f"No transaction with ID {id_to_dlt} found.")
+        
+    
+while True: #Menu 
+    print("1. Add Income")
+    print("2. Add Expense")
+    print("3. View Balance")
+    print("4. View All Transactions")
+    print("5. Delete a Transaction")
+    print("6. Save and Exit")
+    ch= int(input("Enter your choice:"))
+    
+    if ch==1:
+        income()
+    if ch==2:
+        expense()
+    if ch==3:
+        balance()
+    if ch==4:
+        allTrans()
+    if ch==5:
+        dlt()
+    if ch==6:
+        break
+
+    
